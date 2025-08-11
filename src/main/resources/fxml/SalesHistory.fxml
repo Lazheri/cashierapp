@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cashier.controller.SalesHistoryController">
+   <top>
+      <Label styleClass="section-title" text="Historique des Ventes">
+         <BorderPane.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </BorderPane.margin>
+      </Label>
+   </top>
+   <center>
+      <HBox spacing="10.0">
+         <children>
+            <!-- Left Panel: Sales List -->
+            <VBox prefWidth="400.0" spacing="10.0">
+               <children>
+                  <HBox spacing="10.0">
+                     <children>
+                        <Button onAction="#refreshSales" text="Actualiser" />
+                        <Button onAction="#deleteSale" text="Supprimer" />
+                     </children>
+                  </HBox>
+                  
+                  <TableView fx:id="salesTable" prefHeight="500.0">
+                     <columns>
+                        <TableColumn fx:id="saleIdColumn" prefWidth="50.0" text="ID" />
+                        <TableColumn fx:id="saleDateColumn" prefWidth="150.0" text="Date" />
+                        <TableColumn fx:id="saleTotalColumn" prefWidth="100.0" text="Total" />
+                     </columns>
+                  </TableView>
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+            
+            <!-- Right Panel: Sale Details -->
+            <VBox prefWidth="400.0" spacing="10.0">
+               <children>
+                  <Label styleClass="section-title" text="Détails de la Vente" />
+                  
+                  <VBox fx:id="saleDetailsBox" spacing="10.0" visible="false">
+                     <children>
+                        <HBox spacing="10.0">
+                           <children>
+                              <Label text="ID Vente:" />
+                              <Label fx:id="selectedSaleIdLabel" styleClass="product-name" />
+                           </children>
+                        </HBox>
+                        <HBox spacing="10.0">
+                           <children>
+                              <Label text="Date:" />
+                              <Label fx:id="selectedSaleDateLabel" />
+                           </children>
+                        </HBox>
+                        <HBox spacing="10.0">
+                           <children>
+                              <Label text="Total:" />
+                              <Label fx:id="selectedSaleTotalLabel" styleClass="price-label" />
+                           </children>
+                        </HBox>
+                        
+                        <Separator />
+                        
+                        <Label text="Produits vendus:" />
+                        <TableView fx:id="saleItemsTable" prefHeight="300.0">
+                           <columns>
+                              <TableColumn fx:id="itemProductColumn" prefWidth="150.0" text="Produit" />
+                              <TableColumn fx:id="itemQuantityColumn" prefWidth="60.0" text="Qté" />
+                              <TableColumn fx:id="itemPriceColumn" prefWidth="80.0" text="Prix Unit." />
+                              <TableColumn fx:id="itemTotalColumn" prefWidth="80.0" text="Total" />
+                           </columns>
+                        </TableView>
+                     </children>
+                  </VBox>
+                  
+                  <Label fx:id="messageLabel" styleClass="message-label" wrapText="true" />
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+         </children>
+      </HBox>
+   </center>
+</BorderPane>
+

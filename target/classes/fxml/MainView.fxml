@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cashier.controller.MainController">
+   <top>
+      <MenuBar>
+         <menus>
+            <Menu mnemonicParsing="false" text="Fichier">
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Quitter" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Gestion">
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#showProductManagement" text="Gestion des Produits" />
+                  <MenuItem mnemonicParsing="false" onAction="#showSalesHistory" text="Historique des Ventes" />
+               </items>
+            </Menu>
+         </menus>
+      </MenuBar>
+   </top>
+   <center>
+      <HBox spacing="10.0">
+         <children>
+            <!-- Left Panel: Product List -->
+            <VBox prefWidth="400.0" spacing="10.0">
+               <children>
+                  <Label styleClass="section-title" text="Produits Disponibles" />
+                  <TableView fx:id="productsTable" prefHeight="400.0">
+                     <columns>
+                        <TableColumn fx:id="productIdColumn" prefWidth="50.0" text="ID" />
+                        <TableColumn fx:id="productNameColumn" prefWidth="150.0" text="Nom" />
+                        <TableColumn fx:id="productPriceColumn" prefWidth="80.0" text="Prix" />
+                        <TableColumn fx:id="productStockColumn" prefWidth="80.0" text="Stock" />
+                     </columns>
+                  </TableView>
+                  <HBox spacing="10.0">
+                     <children>
+                        <Spinner fx:id="quantitySpinner" initialValue="1" min="0" max="9999" editable="true" prefWidth="80.0" />
+                        <Button onAction="#addProductToCartFromTable" text="Ajouter au Panier" />
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+            
+            <!-- Middle Panel: Cart -->
+            <VBox prefWidth="400.0" spacing="10.0">
+               <children>
+                  <Label styleClass="section-title" text="Panier" />
+                  <TableView fx:id="cartTable" prefHeight="300.0" editable="true">
+                     <columns>
+                        <TableColumn fx:id="cartProductColumn" prefWidth="150.0" text="Produit" />
+                        <TableColumn fx:id="cartQuantityColumn" prefWidth="80.0" text="Qté" />
+                        <TableColumn fx:id="cartPriceColumn" prefWidth="80.0" text="Prix Unit." />
+                        <TableColumn fx:id="cartTotalColumn" prefWidth="80.0" text="Total" />
+                     </columns>
+                  </TableView>
+                  
+                  <!-- Cart Actions -->
+                  <HBox spacing="10.0">
+                     <children>
+                        <Button onAction="#removeFromCart" text="Supprimer" />
+                        <Button onAction="#clearCart" text="Vider Panier" />
+                     </children>
+                  </HBox>
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+            
+            <!-- Right Panel: Total and Payment -->
+            <VBox prefWidth="200.0" spacing="20.0">
+               <children>
+                  <Label styleClass="section-title" text="Total" />
+                  
+                  <VBox spacing="10.0">
+                     <children>
+                        <HBox>
+                           <children>
+                              <Label text="Sous-total: " />
+                              <Label fx:id="subtotalLabel" styleClass="price-label" text="0.000 TND" />
+                           </children>
+                        </HBox>
+                        <Separator />
+                        <HBox>
+                           <children>
+                              <Label styleClass="total-label" text="TOTAL: " />
+                              <Label fx:id="totalLabel" styleClass="total-price" text="0.000 TND" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+                  
+                  <!-- Payment Buttons -->
+                  <VBox spacing="10.0">
+                     <children>
+                        <Button fx:id="payButton" onAction="#processPayment" prefHeight="50.0" prefWidth="200.0" styleClass="pay-button" text="PAYER" />
+                        <Button onAction="#cancelSale" prefHeight="40.0" prefWidth="200.0" styleClass="cancel-button" text="Annuler Vente" />
+                     </children>
+                  </VBox>
+                  
+                  <!-- Messages -->
+                  <Label fx:id="messageLabel" styleClass="message-label" wrapText="true" />
+               </children>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+            </VBox>
+         </children>
+      </HBox>
+   </center>
+</BorderPane>
+
+
