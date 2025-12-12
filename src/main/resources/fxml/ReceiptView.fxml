@@ -12,6 +12,8 @@
         <Label styleClass="section-title" text="Reçu de Vente" />
         <Label fx:id="saleIdLabel" text="ID de Vente: " />
         <Label fx:id="saleDateLabel" text="Date: " />
+        <Label fx:id="customerLabel" text="Client: " />
+        <Label fx:id="loyaltyPointsLabel" text="Points loyauté: " />
         <Separator />
         <Label text="Détails des Articles:" />
         <TableView fx:id="receiptItemsTable" prefHeight="200.0" prefWidth="300.0">

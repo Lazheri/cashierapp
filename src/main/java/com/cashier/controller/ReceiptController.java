@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import com.cashier.model.Customer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -20,6 +21,8 @@ public class ReceiptController implements Initializable {
 
     @FXML private Label saleIdLabel;
     @FXML private Label saleDateLabel;
+    @FXML private Label customerLabel;
+    @FXML private Label loyaltyPointsLabel;
     @FXML private TableView<ReceiptItem> receiptItemsTable;
     @FXML private TableColumn<ReceiptItem, String> receiptProductColumn;
     @FXML private TableColumn<ReceiptItem, Double> receiptQuantityColumn;
@@ -38,8 +41,20 @@ public class ReceiptController implements Initializable {
     }
 
     public void setReceiptDetails(int saleId, LocalDateTime saleDate, List<MainController.CartItem> cartItems, double total) {
+        setReceiptDetails(saleId, saleDate, cartItems, total, null);
+    }
+
+    public void setReceiptDetails(int saleId, LocalDateTime saleDate, List<MainController.CartItem> cartItems, double total, Customer customer) {
         saleIdLabel.setText("ID de Vente: " + saleId);
         saleDateLabel.setText("Date: " + saleDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+        
+        if (customer != null) {
+            customerLabel.setText("Client: " + customer.getName());
+            loyaltyPointsLabel.setText("Points loyauté: " + customer.getLoyaltyPoints());
+        } else {
+            customerLabel.setText("Client: Non enregistré");
+            loyaltyPointsLabel.setText("Points loyauté: 0");
+        }
         
         for (MainController.CartItem item : cartItems) {
             receiptItems.add(new ReceiptItem(item.getProductName(), item.getQuantity(), item.getUnitPrice()));

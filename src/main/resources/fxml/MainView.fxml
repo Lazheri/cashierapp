@@ -16,7 +16,9 @@
             <Menu mnemonicParsing="false" text="Gestion">
                <items>
                   <MenuItem mnemonicParsing="false" onAction="#showProductManagement" text="Gestion des Produits" />
+                  <MenuItem mnemonicParsing="false" onAction="#showCustomerManagement" text="Gestion des Clients" />
                   <MenuItem mnemonicParsing="false" onAction="#showSalesHistory" text="Historique des Ventes" />
+                  <MenuItem mnemonicParsing="false" onAction="#showDashboard" text="Tableau de Bord" />
                </items>
             </Menu>
          </menus>
@@ -78,6 +80,44 @@
             <!-- Right Panel: Total and Payment -->
             <VBox prefWidth="200.0" spacing="20.0">
                <children>
+                  <Label styleClass="section-title" text="Client" />
+
+                  <VBox spacing="5.0">
+                     <children>
+                        <HBox spacing="5.0">
+                           <children>
+                              <TextField fx:id="customerSearchField" promptText="Nom ou tel..." prefWidth="140.0" />
+                              <Button onAction="#handleSearchCustomer" text="Cherch." prefWidth="50.0" />
+                           </children>
+                        </HBox>
+                        <ComboBox fx:id="customerComboBox" prefWidth="200.0" />
+                        <HBox spacing="5.0">
+                           <children>
+                              <Button onAction="#handleSelectCustomer" text="Sélectionner" prefWidth="95.0" />
+                              <Button onAction="#handleClearCustomer" text="Effacer" prefWidth="95.0" />
+                           </children>
+                        </HBox>
+                        <VBox spacing="3.0">
+                           <children>
+                              <HBox>
+                                 <children>
+                                    <Label text="Client: " />
+                                    <Label fx:id="selectedCustomerLabel" text="Aucun" />
+                                 </children>
+                              </HBox>
+                              <HBox>
+                                 <children>
+                                    <Label text="Points: " />
+                                    <Label fx:id="loyaltyPointsLabel" text="0" />
+                                 </children>
+                              </HBox>
+                           </children>
+                        </VBox>
+                     </children>
+                  </VBox>
+
+                  <Separator />
+
                   <Label styleClass="section-title" text="Total" />
                   
                   <VBox spacing="10.0">
