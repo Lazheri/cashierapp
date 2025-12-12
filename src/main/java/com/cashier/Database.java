@@ -36,7 +36,8 @@ public class Database {
                              " prix REAL NOT NULL,\n" +
                              " quantite REAL NOT NULL,\n" +
                              " code_barres TEXT,\n" +
-                             " type TEXT\n" +
+                             " type TEXT,\n" +
+                             " categorie TEXT\n" +
                              ");";
 
         String sqlVentes = "CREATE TABLE IF NOT EXISTS Ventes (\n" +
@@ -60,6 +61,19 @@ public class Database {
             stmt.execute(sqlProduits);
             stmt.execute(sqlVentes);
             stmt.execute(sqlLignesVente);
+
+            // Attempt to add 'categorie' column for existing databases
+            try {
+                stmt.execute("ALTER TABLE Produits ADD COLUMN categorie TEXT");
+                System.out.println("Column 'categorie' added to Produits table.");
+            } catch (SQLException e) {
+                // Ignore error if column already exists (Duplicate column name)
+                if (!e.getMessage().contains("duplicate column name")) {
+                     // In some sqlite versions/drivers the message might be different, but usually it complains about duplicate column
+                     // System.out.println("Note: " + e.getMessage()); 
+                }
+            }
+
             System.out.println("Tables created or already exist.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());

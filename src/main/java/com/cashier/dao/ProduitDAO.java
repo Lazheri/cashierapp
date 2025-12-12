@@ -10,7 +10,7 @@ import java.util.List;
 public class ProduitDAO {
 
     public void addProduit(Produit produit) {
-        String sql = "INSERT INTO Produits(nom, prix, quantite, code_barres, type) VALUES(?,?,?,?,?)";
+        String sql = "INSERT INTO Produits(nom, prix, quantite, code_barres, type, categorie) VALUES(?,?,?,?,?,?)";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, produit.getNom());
@@ -18,6 +18,7 @@ public class ProduitDAO {
             pstmt.setDouble(3, produit.getQuantite());
             pstmt.setString(4, produit.getCodeBarres());
             pstmt.setString(5, produit.getType());
+            pstmt.setString(6, produit.getCategorie());
             pstmt.executeUpdate();
             System.out.println("Produit added: " + produit.getNom());
         } catch (SQLException e) {
@@ -26,7 +27,7 @@ public class ProduitDAO {
     }
 
     public Produit getProduitById(int id) {
-        String sql = "SELECT id, nom, prix, quantite, code_barres, type FROM Produits WHERE id = ?";
+        String sql = "SELECT id, nom, prix, quantite, code_barres, type, categorie FROM Produits WHERE id = ?";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, id);
@@ -38,7 +39,8 @@ public class ProduitDAO {
                     rs.getDouble("prix"),
                     rs.getDouble("quantite"),
                     rs.getString("code_barres"),
-                    rs.getString("type")
+                    rs.getString("type"),
+                    rs.getString("categorie")
                 );
             }
         } catch (SQLException e) {
@@ -48,7 +50,7 @@ public class ProduitDAO {
     }
 
     public Produit getProduitByCodeBarres(String codeBarres) {
-        String sql = "SELECT id, nom, prix, quantite, code_barres, type FROM Produits WHERE code_barres = ?";
+        String sql = "SELECT id, nom, prix, quantite, code_barres, type, categorie FROM Produits WHERE code_barres = ?";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, codeBarres);
@@ -60,7 +62,8 @@ public class ProduitDAO {
                     rs.getDouble("prix"),
                     rs.getDouble("quantite"),
                     rs.getString("code_barres"),
-                    rs.getString("type")
+                    rs.getString("type"),
+                    rs.getString("categorie")
                 );
             }
         } catch (SQLException e) {
@@ -71,7 +74,7 @@ public class ProduitDAO {
 
     public List<Produit> getAllProduits() {
         List<Produit> produits = new ArrayList<>();
-        String sql = "SELECT id, nom, prix, quantite, code_barres, type FROM Produits";
+        String sql = "SELECT id, nom, prix, quantite, code_barres, type, categorie FROM Produits";
         try (Connection conn = Database.connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -82,7 +85,8 @@ public class ProduitDAO {
                     rs.getDouble("prix"),
                     rs.getDouble("quantite"),
                     rs.getString("code_barres"),
-                    rs.getString("type")
+                    rs.getString("type"),
+                    rs.getString("categorie")
                 ));
             }
         } catch (SQLException e) {
@@ -92,7 +96,7 @@ public class ProduitDAO {
     }
 
     public void updateProduit(Produit produit) {
-        String sql = "UPDATE Produits SET nom = ?, prix = ?, quantite = ?, code_barres = ?, type = ? WHERE id = ?";
+        String sql = "UPDATE Produits SET nom = ?, prix = ?, quantite = ?, code_barres = ?, type = ?, categorie = ? WHERE id = ?";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, produit.getNom());
@@ -100,7 +104,8 @@ public class ProduitDAO {
             pstmt.setDouble(3, produit.getQuantite());
             pstmt.setString(4, produit.getCodeBarres());
             pstmt.setString(5, produit.getType());
-            pstmt.setInt(6, produit.getId());
+            pstmt.setString(6, produit.getCategorie());
+            pstmt.setInt(7, produit.getId());
             pstmt.executeUpdate();
             System.out.println("Produit updated: " + produit.getNom());
         } catch (SQLException e) {
@@ -131,5 +136,3 @@ public class ProduitDAO {
         }
     }
 }
-
-
