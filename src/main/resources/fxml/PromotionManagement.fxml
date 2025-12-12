@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.collections.FXCollections?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+            fx:controller="com.cashier.controller.PromotionManagementController" stylesheets="@../css/style.css">
+    <top>
+        <VBox spacing="10.0" styleClass="section-title">
+            <padding>
+                <Insets top="15.0" right="15.0" bottom="15.0" left="15.0" />
+            </padding>
+            <children>
+                <Label text="Gestion des Promotions" styleClass="section-title" />
+            </children>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="promotionTable" editable="false">
+            <columns>
+                <TableColumn fx:id="codeColumn" prefWidth="100.0" text="Code" />
+                <TableColumn fx:id="descriptionColumn" prefWidth="150.0" text="Description" />
+                <TableColumn fx:id="typeColumn" prefWidth="80.0" text="Type" />
+                <TableColumn fx:id="valueColumn" prefWidth="70.0" text="Valeur" />
+                <TableColumn fx:id="validFromColumn" prefWidth="120.0" text="Valide À Partir De" />
+                <TableColumn fx:id="validToColumn" prefWidth="120.0" text="Valide Jusqu'au" />
+                <TableColumn fx:id="usageColumn" prefWidth="80.0" text="Utilisation" />
+                <TableColumn fx:id="activeColumn" prefWidth="70.0" text="Actif" />
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <VBox spacing="10.0" styleClass="form-container">
+            <padding>
+                <Insets top="10.0" right="15.0" bottom="15.0" left="15.0" />
+            </padding>
+            <children>
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Code:" />
+                        <TextField fx:id="codeField" prefWidth="150.0" promptText="Entrez le code" />
+                        
+                        <Label text="Description:" />
+                        <TextField fx:id="descriptionField" prefWidth="200.0" promptText="Description" />
+                    </children>
+                </HBox>
+
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Type:" />
+                        <ComboBox fx:id="typeCombo" prefWidth="100.0">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <String fx:value="PERCENT" />
+                                    <String fx:value="FIXED" />
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+
+                        <Label text="Valeur:" />
+                        <TextField fx:id="valueField" prefWidth="100.0" promptText="0.00" />
+
+                        <Label text="Minimum Panier:" />
+                        <TextField fx:id="minimumBasketField" prefWidth="100.0" promptText="0.00" />
+                    </children>
+                </HBox>
+
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Valide À Partir De:" />
+                        <DatePicker fx:id="validFromDatePicker" prefWidth="150.0" />
+                        
+                        <Label text="Valide Jusqu'au:" />
+                        <DatePicker fx:id="validToDatePicker" prefWidth="150.0" />
+                        
+                        <Label text="Limite d'Utilisation:" />
+                        <TextField fx:id="usageCapField" prefWidth="100.0" promptText="Illimité" />
+                    </children>
+                </HBox>
+
+                <HBox spacing="10.0" alignment="CENTER_LEFT">
+                    <children>
+                        <CheckBox fx:id="activeCheckBox" text="Actif" selected="true" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button onAction="#addPromotion" text="Ajouter" styleClass="action-button-primary" />
+                        <Button onAction="#updatePromotion" text="Mettre à jour" styleClass="action-button-primary" />
+                        <Button onAction="#deletePromotion" text="Supprimer" styleClass="action-button-danger" />
+                        <Button onAction="#clearForm" text="Effacer" styleClass="action-button-secondary" />
+                    </children>
+                </HBox>
+
+                <Label fx:id="messageLabel" styleClass="message-label" wrapText="true" />
+            </children>
+        </VBox>
+    </bottom>
+</BorderPane>

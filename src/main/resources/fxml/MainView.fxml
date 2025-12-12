@@ -18,6 +18,7 @@
                <Menu mnemonicParsing="false" text="Gestion">
                   <items>
                      <MenuItem mnemonicParsing="false" onAction="#showProductManagement" text="Gestion des Produits" />
+                     <MenuItem mnemonicParsing="false" onAction="#showPromotionManagement" text="Gestion des Promotions" />
                      <MenuItem mnemonicParsing="false" onAction="#showSalesHistory" text="Historique des Ventes" />
                   </items>
                </Menu>
@@ -71,10 +72,11 @@
             
             <TableView fx:id="cartTable" VBox.vgrow="ALWAYS" editable="true">
                <columns>
-                  <TableColumn fx:id="cartProductColumn" prefWidth="140.0" text="Produit" />
-                  <TableColumn fx:id="cartQuantityColumn" prefWidth="70.0" text="Qté" />
-                  <TableColumn fx:id="cartPriceColumn" prefWidth="80.0" text="P.U." />
-                  <TableColumn fx:id="cartTotalColumn" prefWidth="80.0" text="Total" />
+                  <TableColumn fx:id="cartProductColumn" prefWidth="120.0" text="Produit" />
+                  <TableColumn fx:id="cartQuantityColumn" prefWidth="60.0" text="Qté" />
+                  <TableColumn fx:id="cartPriceColumn" prefWidth="70.0" text="P.U." />
+                  <TableColumn fx:id="cartDiscountColumn" prefWidth="70.0" text="Remise" />
+                  <TableColumn fx:id="cartTotalColumn" prefWidth="70.0" text="Total" />
                </columns>
                <columnResizePolicy>
                   <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -90,7 +92,44 @@
             </HBox>
             
             <Separator />
-            
+
+            <!-- Discount Panel -->
+            <VBox spacing="8.0" styleClass="discount-panel">
+               <children>
+                  <Label text="Remises" styleClass="section-subtitle" />
+
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Manuelle %:" />
+                        <TextField fx:id="manualPercentDiscountField" prefWidth="80.0" promptText="0" />
+                        <Button onAction="#applyManualPercentDiscount" text="Appliquer %" styleClass="action-button-small" />
+                     </children>
+                  </HBox>
+
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Manuelle TND:" />
+                        <TextField fx:id="manualFixedDiscountField" prefWidth="80.0" promptText="0" />
+                        <Button onAction="#applyManualFixedDiscount" text="Appliquer TND" styleClass="action-button-small" />
+                     </children>
+                  </HBox>
+
+                  <Separator />
+
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label text="Code Promo:" />
+                        <TextField fx:id="promoCodeField" prefWidth="120.0" promptText="Entrez le code..." />
+                        <Button onAction="#applyPromoCode" text="Appliquer" styleClass="action-button-small" />
+                     </children>
+                  </HBox>
+
+                  <Label fx:id="discountMessageLabel" styleClass="discount-message-label" wrapText="true" text="" />
+               </children>
+            </VBox>
+
+            <Separator />
+
             <!-- Totals -->
             <VBox spacing="5.0" styleClass="totals-box">
                <children>
@@ -98,6 +137,12 @@
                      <children>
                         <Label text="Sous-total: " styleClass="subtotal-label-text"/>
                         <Label fx:id="subtotalLabel" styleClass="subtotal-value" text="0.000 TND" />
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER_RIGHT">
+                     <children>
+                        <Label text="Remise: " styleClass="discount-label-text"/>
+                        <Label fx:id="discountLabel" styleClass="discount-value" text="0.000 TND" />
                      </children>
                   </HBox>
                   <HBox alignment="CENTER_RIGHT">

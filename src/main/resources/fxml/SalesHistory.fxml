@@ -72,6 +72,7 @@
                               <TableColumn fx:id="itemProductColumn" prefWidth="150.0" text="Produit" />
                               <TableColumn fx:id="itemQuantityColumn" prefWidth="60.0" text="Qté" />
                               <TableColumn fx:id="itemPriceColumn" prefWidth="80.0" text="Prix Unit." />
+                              <TableColumn fx:id="itemDiscountColumn" prefWidth="70.0" text="Remise" />
                               <TableColumn fx:id="itemTotalColumn" prefWidth="80.0" text="Total" />
                            </columns>
                         </TableView>

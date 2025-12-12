@@ -10,13 +10,14 @@ import java.util.List;
 public class LigneVenteDAO {
 
     public void addLigneVente(LigneVente ligneVente) {
-        String sql = "INSERT INTO LignesVente(vente_id, produit_id, quantite, prix_unitaire) VALUES(?,?,?,?)";
+        String sql = "INSERT INTO LignesVente(vente_id, produit_id, quantite, prix_unitaire, line_discount) VALUES(?,?,?,?,?)";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, ligneVente.getVenteId());
             pstmt.setInt(2, ligneVente.getProduitId());
             pstmt.setDouble(3, ligneVente.getQuantite()); // Changed to setDouble
             pstmt.setDouble(4, ligneVente.getPrixUnitaire());
+            pstmt.setDouble(5, ligneVente.getLineDiscount());
             pstmt.executeUpdate();
             System.out.println("LigneVente added for Vente ID: " + ligneVente.getVenteId());
         } catch (SQLException e) {
@@ -26,7 +27,7 @@ public class LigneVenteDAO {
 
     public List<LigneVente> getLignesVenteByVenteId(int venteId) {
         List<LigneVente> lignesVente = new ArrayList<>();
-        String sql = "SELECT id, vente_id, produit_id, quantite, prix_unitaire FROM LignesVente WHERE vente_id = ?";
+        String sql = "SELECT id, vente_id, produit_id, quantite, prix_unitaire, line_discount FROM LignesVente WHERE vente_id = ?";
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, venteId);
@@ -37,7 +38,8 @@ public class LigneVenteDAO {
                     rs.getInt("vente_id"),
                     rs.getInt("produit_id"),
                     rs.getDouble("quantite"), // Changed to getDouble
-                    rs.getDouble("prix_unitaire")
+                    rs.getDouble("prix_unitaire"),
+                    rs.getDouble("line_discount")
                 ));
             }
         } catch (SQLException e) {
