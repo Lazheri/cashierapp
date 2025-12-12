@@ -28,7 +28,44 @@
                 <Label fx:id="receiptTotalLabel" styleClass="total-price" text="0.000 TND" />
             </children>
         </HBox>
-        <Button onAction="#closeReceipt" text="Fermer" />
+        <Separator />
+        <VBox spacing="5.0">
+            <children>
+                <Label text="Informations de paiement:" styleClass="label-bold" />
+                <HBox spacing="10.0">
+                    <children>
+                        <Label text="Mode de paiement:" />
+                        <Label fx:id="paymentMethodLabel" text="N/A" />
+                    </children>
+                </HBox>
+                <HBox fx:id="amountPaidBox" spacing="10.0" visible="false" managed="false">
+                    <children>
+                        <Label text="Montant reçu:" />
+                        <Label fx:id="amountPaidLabel" text="0.000 TND" />
+                    </children>
+                </HBox>
+                <HBox fx:id="changeBox" spacing="10.0" visible="false" managed="false">
+                    <children>
+                        <Label text="Monnaie:" />
+                        <Label fx:id="changeLabel" text="0.000 TND" />
+                    </children>
+                </HBox>
+                <HBox fx:id="referenceBox" spacing="10.0" visible="false" managed="false">
+                    <children>
+                        <Label text="Référence:" />
+                        <Label fx:id="paymentReferenceLabel" text="N/A" wrapText="true" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+        <Separator />
+        <HBox spacing="10.0" alignment="CENTER">
+            <children>
+                <Button onAction="#printReceipt" text="Imprimer" styleClass="button-primary" />
+                <Button onAction="#exportReceipt" text="Exporter PDF" />
+                <Button onAction="#closeReceipt" text="Fermer" />
+            </children>
+        </HBox>
     </children>
 </VBox>
 
