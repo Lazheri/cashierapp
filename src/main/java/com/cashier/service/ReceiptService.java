@@ -29,13 +29,22 @@ public class ReceiptService {
         receipt.append("ARTICLES\n");
         receipt.append("----------------------------------------\n");
         
+        double subtotal = 0;
         for (MainController.CartItem item : cartItems) {
             receipt.append(String.format("%-20s x %.2f\n", item.getProductName(), item.getQuantity()));
             receipt.append(String.format("  %.3f TND x %.3f = %.3f TND\n", 
-                item.getUnitPrice(), item.getQuantity(), item.getTotal()));
+                item.getUnitPrice(), item.getQuantity(), item.getQuantity() * item.getUnitPrice()));
+            if (item.getDiscount() > 0) {
+                receipt.append(String.format("  (Remise: -%.3f TND)\n", item.getDiscount()));
+            }
+            subtotal += item.getQuantity() * item.getUnitPrice();
         }
         
         receipt.append("----------------------------------------\n");
+        receipt.append(String.format("Sous-total: %.3f TND\n", subtotal));
+        if (vente.getDiscountAmount() > 0) {
+            receipt.append(String.format("Remise: -%.3f TND\n", vente.getDiscountAmount()));
+        }
         receipt.append(String.format("TOTAL: %.3f TND\n", vente.getTotal()));
         receipt.append("========================================\n\n");
         

@@ -111,6 +111,24 @@ public class Database {
                 }
             }
 
+            try {
+                stmt.execute("ALTER TABLE Ventes ADD COLUMN discount_amount REAL DEFAULT 0");
+                System.out.println("Column 'discount_amount' added to Ventes table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
+            try {
+                stmt.execute("ALTER TABLE LignesVente ADD COLUMN line_discount REAL DEFAULT 0");
+                System.out.println("Column 'line_discount' added to LignesVente table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
             System.out.println("Tables created or already exist.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());

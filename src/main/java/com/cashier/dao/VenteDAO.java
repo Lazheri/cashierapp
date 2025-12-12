@@ -16,7 +16,7 @@ import java.util.List;
 public class VenteDAO {
 
     public double addVente(Vente vente) {
-        String sql = "INSERT INTO Ventes(date_vente, total, payment_method, amount_paid, change_due, payment_reference) VALUES(?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Ventes(date_vente, total, payment_method, amount_paid, change_due, payment_reference, discount_amount) VALUES(?, ?, ?, ?, ?, ?, ?)";
         double venteId = -1;
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -26,6 +26,7 @@ public class VenteDAO {
             pstmt.setDouble(4, vente.getAmountPaid());
             pstmt.setDouble(5, vente.getChangeDue());
             pstmt.setString(6, vente.getPaymentReference());
+            pstmt.setDouble(7, vente.getDiscountAmount());
             pstmt.executeUpdate();
 
             ResultSet rs = pstmt.getGeneratedKeys();
@@ -39,7 +40,7 @@ public class VenteDAO {
     }
 
     public List<Vente> getAllVentes() {
-        String sql = "SELECT id, date_vente, total, payment_method, amount_paid, change_due, payment_reference FROM Ventes ORDER BY date_vente DESC";
+        String sql = "SELECT id, date_vente, total, payment_method, amount_paid, change_due, payment_reference, discount_amount FROM Ventes ORDER BY date_vente DESC";
         List<Vente> ventes = new ArrayList<>();
         try (Connection conn = Database.connect();
              Statement stmt = conn.createStatement();
@@ -49,6 +50,7 @@ public class VenteDAO {
                 double amountPaid = rs.getDouble("amount_paid");
                 double changeDue = rs.getDouble("change_due");
                 String paymentReference = rs.getString("payment_reference");
+                double discountAmount = rs.getDouble("discount_amount");
                 
                 Vente vente = new Vente(
                     rs.getInt("id"),
@@ -57,7 +59,8 @@ public class VenteDAO {
                     paymentMethod,
                     amountPaid,
                     changeDue,
-                    paymentReference
+                    paymentReference,
+                    discountAmount
                 );
                 ventes.add(vente);
             }

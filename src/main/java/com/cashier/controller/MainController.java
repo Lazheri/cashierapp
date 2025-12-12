@@ -3,9 +3,12 @@ package com.cashier.controller;
 import com.cashier.dao.ProduitDAO;
 import com.cashier.dao.VenteDAO;
 import com.cashier.dao.LigneVenteDAO;
+import com.cashier.dao.PromotionDAO;
 import com.cashier.model.Produit;
 import com.cashier.model.Vente;
 import com.cashier.model.LigneVente;
+import com.cashier.model.Promotion;
+import com.cashier.service.PromotionService;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -48,11 +51,18 @@ public class MainController implements Initializable {
     @FXML private TableColumn<CartItem, String> cartProductColumn;
     @FXML private TableColumn<CartItem, Double> cartQuantityColumn;
     @FXML private TableColumn<CartItem, Double> cartPriceColumn;
+    @FXML private TableColumn<CartItem, Double> cartDiscountColumn;
     @FXML private TableColumn<CartItem, Double> cartTotalColumn;
     @FXML private Label subtotalLabel;
+    @FXML private Label discountLabel;
     @FXML private Label totalLabel;
     @FXML private Button payButton;
     @FXML private Label messageLabel;
+
+    @FXML private TextField manualPercentDiscountField;
+    @FXML private TextField manualFixedDiscountField;
+    @FXML private TextField promoCodeField;
+    @FXML private Label discountMessageLabel;
     
     // Hidden spinner for logic consistency if needed, though we use direct add
     @FXML private Spinner<Double> quantitySpinner;
@@ -60,17 +70,22 @@ public class MainController implements Initializable {
     private ProduitDAO produitDAO;
     private VenteDAO venteDAO;
     private LigneVenteDAO ligneVenteDAO;
+    private PromotionDAO promotionDAO;
+    private PromotionService promotionService;
     private ObservableList<CartItem> cartItems;
     private ObservableList<Produit> allProducts; // Cache of all products
     
     private PauseTransition searchDebounce;
     private static final double LOW_STOCK_THRESHOLD = 5.0;
+    private double totalDiscount = 0;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         produitDAO = new ProduitDAO();
         venteDAO = new VenteDAO();
         ligneVenteDAO = new LigneVenteDAO();
+        promotionDAO = new PromotionDAO();
+        promotionService = new PromotionService();
         cartItems = FXCollections.observableArrayList();
         allProducts = FXCollections.observableArrayList();
 
@@ -94,6 +109,7 @@ public class MainController implements Initializable {
         });
         
         clearMessage();
+        clearDiscountMessage();
     }
 
     private void loadProducts() {
@@ -251,6 +267,7 @@ public class MainController implements Initializable {
         cartProductColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getProductName()));
         cartQuantityColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantity()).asObject());
         cartPriceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getUnitPrice()).asObject());
+        cartDiscountColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getDiscount()).asObject());
         cartTotalColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal()).asObject());
 
         cartTable.setItems(cartItems);
@@ -307,14 +324,21 @@ public class MainController implements Initializable {
     @FXML
     private void clearCart() {
         cartItems.clear();
+        totalDiscount = 0;
+        manualPercentDiscountField.clear();
+        manualFixedDiscountField.clear();
+        promoCodeField.clear();
         updateTotals();
         clearMessage();
+        clearDiscountMessage();
     }
 
     private void updateTotals() {
-        double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
-        subtotalLabel.setText(String.format("%.3f TND", total));
-        totalLabel.setText(String.format("%.3f TND", total));
+        double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+        double finalTotal = subtotal - totalDiscount;
+        subtotalLabel.setText(String.format("%.3f TND", subtotal));
+        discountLabel.setText(String.format("%.3f TND", totalDiscount));
+        totalLabel.setText(String.format("%.3f TND", Math.max(0, finalTotal)));
         payButton.setDisable(cartItems.isEmpty());
     }
 
@@ -326,12 +350,13 @@ public class MainController implements Initializable {
         }
 
         try {
-            double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
+            double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+            double finalTotal = subtotal - totalDiscount;
             
             FXMLLoader paymentLoader = new FXMLLoader(getClass().getResource("/fxml/PaymentDialog.fxml"));
             Parent paymentRoot = paymentLoader.load();
             PaymentDialogController paymentController = paymentLoader.getController();
-            paymentController.setTotal(total);
+            paymentController.setTotal(Math.max(0, finalTotal));
 
             Stage paymentStage = new Stage();
             paymentStage.setTitle("Paiement");
@@ -348,17 +373,18 @@ public class MainController implements Initializable {
 
             Vente vente = new Vente(
                 LocalDateTime.now(), 
-                total, 
+                Math.max(0, finalTotal),
                 paymentResult.getPaymentMethod(), 
                 paymentResult.getAmountPaid(), 
                 paymentResult.getChangeDue(), 
-                paymentResult.getPaymentReference()
+                paymentResult.getPaymentReference(),
+                totalDiscount
             );
             double venteId = venteDAO.addVente(vente);
 
             if (venteId > 0) {
                 for (CartItem item : cartItems) {
-                    LigneVente ligneVente = new LigneVente((int) venteId, item.getProductId(), item.getQuantity(), item.getUnitPrice());
+                    LigneVente ligneVente = new LigneVente((int) venteId, item.getProductId(), item.getQuantity(), item.getUnitPrice(), item.getDiscount());
                     ligneVenteDAO.addLigneVente(ligneVente);
 
                     Produit produit = produitDAO.getProduitById(item.getProductId());
@@ -414,6 +440,22 @@ public class MainController implements Initializable {
     }
 
     @FXML
+    private void showPromotionManagement() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PromotionManagement.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Gestion des Promotions");
+            stage.setScene(new Scene(root, 1000, 600));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+        } catch (IOException e) {
+            showMessage("Erreur lors de l\"ouverture de la gestion des promotions: " + e.getMessage());
+        }
+    }
+
+    @FXML
     private void showSalesHistory() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SalesHistory.fxml"));
@@ -434,9 +476,136 @@ public class MainController implements Initializable {
         System.exit(0);
     }
 
+    @FXML
+    private void applyManualPercentDiscount() {
+        if (cartItems.isEmpty()) {
+            showDiscountMessage("Le panier est vide");
+            return;
+        }
+
+        try {
+            double percent = Double.parseDouble(manualPercentDiscountField.getText().trim());
+            if (percent < 0 || percent > 100) {
+                showDiscountMessage("Le pourcentage doit être entre 0 et 100");
+                return;
+            }
+
+            double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+            double discountAmount = subtotal * (percent / 100.0);
+            
+            totalDiscount = discountAmount;
+            applyDiscountToItems();
+            clearDiscountInputs();
+            showDiscountMessage("Remise de " + percent + "% appliquée");
+            updateTotals();
+        } catch (NumberFormatException e) {
+            showDiscountMessage("Valeur invalide pour le pourcentage");
+        }
+    }
+
+    @FXML
+    private void applyManualFixedDiscount() {
+        if (cartItems.isEmpty()) {
+            showDiscountMessage("Le panier est vide");
+            return;
+        }
+
+        try {
+            double amount = Double.parseDouble(manualFixedDiscountField.getText().trim());
+            if (amount < 0) {
+                showDiscountMessage("La remise ne peut pas être négative");
+                return;
+            }
+
+            double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+            if (amount > subtotal) {
+                showDiscountMessage("La remise ne peut pas dépasser le sous-total");
+                return;
+            }
+
+            totalDiscount = amount;
+            applyDiscountToItems();
+            clearDiscountInputs();
+            showDiscountMessage("Remise de " + String.format("%.3f", amount) + " TND appliquée");
+            updateTotals();
+        } catch (NumberFormatException e) {
+            showDiscountMessage("Valeur invalide pour la remise");
+        }
+    }
+
+    @FXML
+    private void applyPromoCode() {
+        if (cartItems.isEmpty()) {
+            showDiscountMessage("Le panier est vide");
+            return;
+        }
+
+        String code = promoCodeField.getText().trim();
+        if (code.isEmpty()) {
+            showDiscountMessage("Veuillez entrer un code de promotion");
+            return;
+        }
+
+        double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+        PromotionService.ValidationResult validation = promotionService.validatePromoCode(code, subtotal);
+
+        if (!validation.isValid) {
+            showDiscountMessage(validation.errorMessage);
+            return;
+        }
+
+        Promotion promotion = validation.promotion;
+        double discountAmount = promotionService.calculateDiscount(promotion, subtotal);
+        
+        if (discountAmount > subtotal) {
+            discountAmount = subtotal;
+        }
+
+        totalDiscount = discountAmount;
+        applyDiscountToItems();
+        promoCodeField.clear();
+        promotionService.recordPromotionUsage(promotion.getId());
+        
+        String discountType = "PERCENT".equalsIgnoreCase(promotion.getType()) ? 
+            promotion.getValue() + "%" : String.format("%.3f TND", promotion.getValue());
+        showDiscountMessage("Code promo appliqué: " + code + " (" + discountType + ")");
+        updateTotals();
+    }
+
+    private void applyDiscountToItems() {
+        if (cartItems.isEmpty()) {
+            return;
+        }
+
+        double subtotal = cartItems.stream().mapToDouble(item -> item.getQuantity() * item.getUnitPrice()).sum();
+        
+        for (CartItem item : cartItems) {
+            double itemSubtotal = item.getQuantity() * item.getUnitPrice();
+            double itemDiscount = (itemSubtotal / subtotal) * totalDiscount;
+            item.setDiscount(itemDiscount);
+        }
+        
+        cartTable.refresh();
+    }
+
+    private void clearDiscountInputs() {
+        manualPercentDiscountField.clear();
+        manualFixedDiscountField.clear();
+    }
+
+    private void showDiscountMessage(String message) {
+        discountMessageLabel.setText(message);
+        PauseTransition delay = new PauseTransition(Duration.seconds(3));
+        delay.setOnFinished(e -> discountMessageLabel.setText(""));
+        delay.play();
+    }
+
+    private void clearDiscountMessage() {
+        discountMessageLabel.setText("");
+    }
+
     private void showMessage(String message) {
         messageLabel.setText(message);
-        // Fade out message after 3 seconds
         PauseTransition delay = new PauseTransition(Duration.seconds(3));
         delay.setOnFinished(e -> messageLabel.setText(""));
         delay.play();
@@ -452,12 +621,22 @@ public class MainController implements Initializable {
         private String productName;
         private double quantity;
         private double unitPrice;
+        private double discount;
 
         public CartItem(int productId, String productName, double quantity, double unitPrice) {
             this.productId = productId;
             this.productName = productName;
             this.quantity = quantity;
             this.unitPrice = unitPrice;
+            this.discount = 0;
+        }
+
+        public CartItem(int productId, String productName, double quantity, double unitPrice, double discount) {
+            this.productId = productId;
+            this.productName = productName;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+            this.discount = discount;
         }
 
         public int getProductId() { return productId; }
@@ -465,6 +644,8 @@ public class MainController implements Initializable {
         public double getQuantity() { return quantity; }
         public void setQuantity(double quantity) { this.quantity = quantity; }
         public double getUnitPrice() { return unitPrice; }
-        public double getTotal() { return quantity * unitPrice; }
+        public double getDiscount() { return discount; }
+        public void setDiscount(double discount) { this.discount = discount; }
+        public double getTotal() { return (quantity * unitPrice) - discount; }
     }
 }

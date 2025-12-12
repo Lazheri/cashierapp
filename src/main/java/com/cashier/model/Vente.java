@@ -12,16 +12,19 @@ public class Vente {
     private double amountPaid;
     private double changeDue;
     private String paymentReference;
+    private double discountAmount;
 
     public Vente(int id, LocalDateTime dateVente, double total) {
         this.id = id;
         this.dateVente = dateVente;
         this.total = total;
+        this.discountAmount = 0;
     }
 
     public Vente(LocalDateTime dateVente, double total) {
         this.dateVente = dateVente;
         this.total = total;
+        this.discountAmount = 0;
     }
 
     public Vente(int id, LocalDateTime dateVente, double total, String paymentMethod, double amountPaid, double changeDue, String paymentReference) {
@@ -32,6 +35,18 @@ public class Vente {
         this.amountPaid = amountPaid;
         this.changeDue = changeDue;
         this.paymentReference = paymentReference;
+        this.discountAmount = 0;
+    }
+
+    public Vente(int id, LocalDateTime dateVente, double total, String paymentMethod, double amountPaid, double changeDue, String paymentReference, double discountAmount) {
+        this.id = id;
+        this.dateVente = dateVente;
+        this.total = total;
+        this.paymentMethod = paymentMethod;
+        this.amountPaid = amountPaid;
+        this.changeDue = changeDue;
+        this.paymentReference = paymentReference;
+        this.discountAmount = discountAmount;
     }
 
     public Vente(LocalDateTime dateVente, double total, String paymentMethod, double amountPaid, double changeDue, String paymentReference) {
@@ -41,6 +56,17 @@ public class Vente {
         this.amountPaid = amountPaid;
         this.changeDue = changeDue;
         this.paymentReference = paymentReference;
+        this.discountAmount = 0;
+    }
+
+    public Vente(LocalDateTime dateVente, double total, String paymentMethod, double amountPaid, double changeDue, String paymentReference, double discountAmount) {
+        this.dateVente = dateVente;
+        this.total = total;
+        this.paymentMethod = paymentMethod;
+        this.amountPaid = amountPaid;
+        this.changeDue = changeDue;
+        this.paymentReference = paymentReference;
+        this.discountAmount = discountAmount;
     }
 
     // Getters and Setters
@@ -100,19 +126,28 @@ public class Vente {
         this.paymentReference = paymentReference;
     }
 
+    public double getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(double discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return "Vente{" +
-               "id=" + id +
-               ", dateVente=\"" + dateVente.format(formatter) + "\"" +
-               ", total=" + total +
-               ", paymentMethod='" + paymentMethod + '\'' +
-               ", amountPaid=" + amountPaid +
-               ", changeDue=" + changeDue +
-               ", paymentReference='" + paymentReference + '\'' +
-               "}\n";
+                "id=" + id +
+                ", dateVente=\"" + dateVente.format(formatter) + "\"" +
+                ", total=" + total +
+                ", paymentMethod='" + paymentMethod + '\'' +
+                ", amountPaid=" + amountPaid +
+                ", changeDue=" + changeDue +
+                ", paymentReference='" + paymentReference + '\'' +
+                ", discountAmount=" + discountAmount +
+                "}\n";
     }
-}
+    }
 
 

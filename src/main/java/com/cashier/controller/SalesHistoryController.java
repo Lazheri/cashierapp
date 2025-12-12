@@ -37,6 +37,7 @@ public class SalesHistoryController implements Initializable {
     @FXML private TableColumn<SaleItemDetail, String> itemProductColumn;
     @FXML private TableColumn<SaleItemDetail, Double> itemQuantityColumn; // Changed to Double
     @FXML private TableColumn<SaleItemDetail, Double> itemPriceColumn;
+    @FXML private TableColumn<SaleItemDetail, Double> itemDiscountColumn;
     @FXML private TableColumn<SaleItemDetail, Double> itemTotalColumn;
     
     @FXML private Label messageLabel;
@@ -83,6 +84,7 @@ public class SalesHistoryController implements Initializable {
         itemProductColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getProductName()));
         itemQuantityColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantity()).asObject()); // Changed to Double
         itemPriceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getUnitPrice()).asObject());
+        itemDiscountColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getDiscount()).asObject());
         itemTotalColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal()).asObject());
 
         saleItemsTable.setItems(saleItems);
@@ -109,7 +111,8 @@ public class SalesHistoryController implements Initializable {
             SaleItemDetail item = new SaleItemDetail(
                 productName,
                 ligne.getQuantite(),
-                ligne.getPrixUnitaire()
+                ligne.getPrixUnitaire(),
+                ligne.getLineDiscount()
             );
             saleItems.add(item);
         }
@@ -166,17 +169,27 @@ public class SalesHistoryController implements Initializable {
         private String productName;
         private double quantity; // Changed to Double
         private double unitPrice;
+        private double discount;
 
         public SaleItemDetail(String productName, double quantity, double unitPrice) { // Changed to Double
             this.productName = productName;
             this.quantity = quantity;
             this.unitPrice = unitPrice;
+            this.discount = 0;
+        }
+
+        public SaleItemDetail(String productName, double quantity, double unitPrice, double discount) {
+            this.productName = productName;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+            this.discount = discount;
         }
 
         public String getProductName() { return productName; }
         public double getQuantity() { return quantity; } // Changed to Double
         public double getUnitPrice() { return unitPrice; }
-        public double getTotal() { return quantity * unitPrice; }
+        public double getDiscount() { return discount; }
+        public double getTotal() { return (quantity * unitPrice) - discount; }
     }
 }
 
