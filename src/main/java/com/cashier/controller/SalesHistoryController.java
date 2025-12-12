@@ -1,11 +1,13 @@
 package com.cashier.controller;
 
+import com.cashier.SessionContext;
 import com.cashier.dao.VenteDAO;
 import com.cashier.dao.LigneVenteDAO;
 import com.cashier.dao.ProduitDAO;
 import com.cashier.model.Vente;
 import com.cashier.model.LigneVente;
 import com.cashier.model.Produit;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -15,6 +17,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.format.DateTimeFormatter;
@@ -27,18 +30,18 @@ public class SalesHistoryController implements Initializable {
     @FXML private TableColumn<Vente, Integer> saleIdColumn;
     @FXML private TableColumn<Vente, String> saleDateColumn;
     @FXML private TableColumn<Vente, Double> saleTotalColumn;
-    
+
     @FXML private VBox saleDetailsBox;
     @FXML private Label selectedSaleIdLabel;
     @FXML private Label selectedSaleDateLabel;
     @FXML private Label selectedSaleTotalLabel;
-    
+
     @FXML private TableView<SaleItemDetail> saleItemsTable;
     @FXML private TableColumn<SaleItemDetail, String> itemProductColumn;
-    @FXML private TableColumn<SaleItemDetail, Double> itemQuantityColumn; // Changed to Double
+    @FXML private TableColumn<SaleItemDetail, Double> itemQuantityColumn;
     @FXML private TableColumn<SaleItemDetail, Double> itemPriceColumn;
     @FXML private TableColumn<SaleItemDetail, Double> itemTotalColumn;
-    
+
     @FXML private Label messageLabel;
 
     private VenteDAO venteDAO;
@@ -50,6 +53,11 @@ public class SalesHistoryController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (!SessionContext.isAdmin()) {
+            denyAccessAndClose();
+            return;
+        }
+
         venteDAO = new VenteDAO();
         ligneVenteDAO = new LigneVenteDAO();
         produitDAO = new ProduitDAO();
@@ -69,7 +77,6 @@ public class SalesHistoryController implements Initializable {
 
         salesTable.setItems(sales);
 
-        // Add selection listener
         salesTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 showSaleDetails(newSelection);
@@ -81,7 +88,7 @@ public class SalesHistoryController implements Initializable {
 
     private void setupSaleItemsTable() {
         itemProductColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getProductName()));
-        itemQuantityColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantity()).asObject()); // Changed to Double
+        itemQuantityColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantity()).asObject());
         itemPriceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getUnitPrice()).asObject());
         itemTotalColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getTotal()).asObject());
 
@@ -96,16 +103,15 @@ public class SalesHistoryController implements Initializable {
     private void showSaleDetails(Vente vente) {
         selectedSaleIdLabel.setText(String.valueOf(vente.getId()));
         selectedSaleDateLabel.setText(vente.getDateVente().format(FORMATTER));
-        selectedSaleTotalLabel.setText(String.format("%.3f TND", vente.getTotal())); // Changed to 3 decimal places for TND
+        selectedSaleTotalLabel.setText(String.format("%.3f TND", vente.getTotal()));
 
-        // Load sale items
         saleItems.clear();
         List<LigneVente> lignesVente = ligneVenteDAO.getLignesVenteByVenteId(vente.getId());
-        
+
         for (LigneVente ligne : lignesVente) {
             Produit produit = produitDAO.getProduitById(ligne.getProduitId());
             String productName = (produit != null) ? produit.getNom() : "Produit supprimé (ID: " + ligne.getProduitId() + ")";
-            
+
             SaleItemDetail item = new SaleItemDetail(
                 productName,
                 ligne.getQuantite(),
@@ -143,14 +149,25 @@ public class SalesHistoryController implements Initializable {
         alert.setContentText("Êtes-vous sûr de vouloir supprimer la vente ID " + selected.getId() + " ?");
 
         if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            // Delete sale lines first
             ligneVenteDAO.deleteLignesVenteByVenteId(selected.getId());
-            // Then delete the sale
             venteDAO.deleteVente(selected.getId());
-            
+
             showMessage("Vente supprimée avec succès.");
             refreshSales();
         }
+    }
+
+    private void denyAccessAndClose() {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Accès refusé");
+            alert.setHeaderText("Accès administrateur requis");
+            alert.setContentText("Vous n'avez pas les droits pour accéder à cette fonctionnalité.");
+            alert.showAndWait();
+
+            Stage stage = (Stage) salesTable.getScene().getWindow();
+            stage.close();
+        });
     }
 
     private void showMessage(String message) {
@@ -161,23 +178,31 @@ public class SalesHistoryController implements Initializable {
         messageLabel.setText("");
     }
 
-    // Inner class for sale item details
     public static class SaleItemDetail {
         private String productName;
-        private double quantity; // Changed to Double
+        private double quantity;
         private double unitPrice;
 
-        public SaleItemDetail(String productName, double quantity, double unitPrice) { // Changed to Double
+        public SaleItemDetail(String productName, double quantity, double unitPrice) {
             this.productName = productName;
             this.quantity = quantity;
             this.unitPrice = unitPrice;
         }
 
-        public String getProductName() { return productName; }
-        public double getQuantity() { return quantity; } // Changed to Double
-        public double getUnitPrice() { return unitPrice; }
-        public double getTotal() { return quantity * unitPrice; }
+        public String getProductName() {
+            return productName;
+        }
+
+        public double getQuantity() {
+            return quantity;
+        }
+
+        public double getUnitPrice() {
+            return unitPrice;
+        }
+
+        public double getTotal() {
+            return quantity * unitPrice;
+        }
     }
 }
-
-

@@ -13,16 +13,16 @@ public class App extends Application {
         // Initialize database
         Database.createTables();
 
-        // Load the main FXML file
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainView.fxml"));
+        // Load the login screen first
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LoginView.fxml"));
         Parent root = loader.load();
 
-        Scene scene = new Scene(root, 1000, 700);
+        Scene scene = new Scene(root, 450, 320);
         scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
 
         primaryStage.setTitle("Système de Caisse Enregistreuse");
         primaryStage.setScene(scene);
-        primaryStage.setResizable(true);
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
 

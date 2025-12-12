@@ -1,4 +1,3 @@
-
 package com.cashier.model;
 
 import java.time.LocalDateTime;
@@ -8,19 +7,29 @@ public class Vente {
     private int id;
     private LocalDateTime dateVente;
     private double total;
+    private Integer userId;
 
     public Vente(int id, LocalDateTime dateVente, double total) {
+        this(id, dateVente, total, null);
+    }
+
+    public Vente(int id, LocalDateTime dateVente, double total, Integer userId) {
         this.id = id;
         this.dateVente = dateVente;
         this.total = total;
+        this.userId = userId;
     }
 
     public Vente(LocalDateTime dateVente, double total) {
-        this.dateVente = dateVente;
-        this.total = total;
+        this(dateVente, total, null);
     }
 
-    // Getters and Setters
+    public Vente(LocalDateTime dateVente, double total, Integer userId) {
+        this.dateVente = dateVente;
+        this.total = total;
+        this.userId = userId;
+    }
+
     public int getId() {
         return id;
     }
@@ -45,6 +54,14 @@ public class Vente {
         this.total = total;
     }
 
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -52,8 +69,7 @@ public class Vente {
                "id=" + id +
                ", dateVente=\"" + dateVente.format(formatter) + "\"" +
                ", total=" + total +
+               ", userId=" + userId +
                "}\n";
     }
 }
-
-

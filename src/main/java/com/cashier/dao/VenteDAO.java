@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -15,13 +16,21 @@ import java.util.List;
 
 public class VenteDAO {
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     public double addVente(Vente vente) {
-        String sql = "INSERT INTO Ventes(date_vente, total) VALUES(?, ?)";
+        String sql = "INSERT INTO Ventes(date_vente, total, user_id) VALUES(?, ?, ?)";
         double venteId = -1;
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setString(1, vente.getDateVente().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            pstmt.setString(1, vente.getDateVente().format(DATE_TIME_FORMATTER));
             pstmt.setDouble(2, vente.getTotal());
+            if (vente.getUserId() != null) {
+                pstmt.setInt(3, vente.getUserId());
+            } else {
+                pstmt.setNull(3, Types.INTEGER);
+            }
+
             pstmt.executeUpdate();
 
             ResultSet rs = pstmt.getGeneratedKeys();
@@ -35,16 +44,20 @@ public class VenteDAO {
     }
 
     public List<Vente> getAllVentes() {
-        String sql = "SELECT id, date_vente, total FROM Ventes ORDER BY date_vente DESC";
+        String sql = "SELECT id, date_vente, total, user_id FROM Ventes ORDER BY date_vente DESC";
         List<Vente> ventes = new ArrayList<>();
         try (Connection conn = Database.connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
+                Object rawUserId = rs.getObject("user_id");
+                Integer userId = rawUserId == null ? null : ((Number) rawUserId).intValue();
+
                 Vente vente = new Vente(
                     rs.getInt("id"),
-                    LocalDateTime.parse(rs.getString("date_vente"), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                    rs.getDouble("total")
+                    LocalDateTime.parse(rs.getString("date_vente"), DATE_TIME_FORMATTER),
+                    rs.getDouble("total"),
+                    userId
                 );
                 ventes.add(vente);
             }
@@ -65,5 +78,3 @@ public class VenteDAO {
         }
     }
 }
-
-

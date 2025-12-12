@@ -6,21 +6,35 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cashier.controller.MainController">
    <top>
-      <MenuBar>
-         <menus>
-            <Menu mnemonicParsing="false" text="Fichier">
-               <items>
-                  <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Quitter" />
-               </items>
-            </Menu>
-            <Menu mnemonicParsing="false" text="Gestion">
-               <items>
-                  <MenuItem mnemonicParsing="false" onAction="#showProductManagement" text="Gestion des Produits" />
-                  <MenuItem mnemonicParsing="false" onAction="#showSalesHistory" text="Historique des Ventes" />
-               </items>
-            </Menu>
-         </menus>
-      </MenuBar>
+      <VBox>
+         <children>
+            <MenuBar>
+               <menus>
+                  <Menu mnemonicParsing="false" text="Fichier">
+                     <items>
+                        <MenuItem mnemonicParsing="false" onAction="#handleLogout" text="Déconnexion" />
+                        <SeparatorMenuItem mnemonicParsing="false" />
+                        <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Quitter" />
+                     </items>
+                  </Menu>
+                  <Menu fx:id="gestionMenu" mnemonicParsing="false" text="Gestion">
+                     <items>
+                        <MenuItem fx:id="productManagementMenuItem" mnemonicParsing="false" onAction="#showProductManagement" text="Gestion des Produits" />
+                        <MenuItem fx:id="salesHistoryMenuItem" mnemonicParsing="false" onAction="#showSalesHistory" text="Historique des Ventes" />
+                     </items>
+                  </Menu>
+               </menus>
+            </MenuBar>
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
+               <children>
+                  <Label fx:id="cashierNameLabel" text="Caissier: -" />
+               </children>
+               <padding>
+                  <Insets bottom="6.0" left="10.0" right="10.0" top="6.0" />
+               </padding>
+            </HBox>
+         </children>
+      </VBox>
    </top>
    <center>
       <HBox spacing="10.0">

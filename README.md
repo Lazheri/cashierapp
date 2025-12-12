@@ -64,6 +64,14 @@ Ce projet est un système de caisse enregistreuse développé en Java, JavaFX et
       run.bat
       ```
 
+### Comptes par défaut (démo)
+
+Au premier lancement, l'application crée automatiquement deux utilisateurs :
+
+- **admin / admin** (rôle **ADMIN**)
+- **cashier / cashier** (rôle **CASHIER**)
+
+
 ### Création d'un Installateur (Raccourci d'Installation)
 
 Pour créer un installateur natif (MSI pour Windows, DEB/RPM pour Linux, DMG pour macOS) qui peut être facilement distribué et installé sur n'importe quelle machine, vous pouvez utiliser l'outil `jpackage` inclus dans le JDK.

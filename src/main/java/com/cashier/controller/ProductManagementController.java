@@ -1,7 +1,9 @@
 package com.cashier.controller;
 
+import com.cashier.SessionContext;
 import com.cashier.dao.ProduitDAO;
 import com.cashier.model.Produit;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -10,6 +12,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -20,15 +23,15 @@ public class ProductManagementController implements Initializable {
     @FXML private TableColumn<Produit, Integer> idColumn;
     @FXML private TableColumn<Produit, String> nameColumn;
     @FXML private TableColumn<Produit, Double> priceColumn;
-    @FXML private TableColumn<Produit, Double> stockColumn; // Changed to Double
+    @FXML private TableColumn<Produit, Double> stockColumn;
     @FXML private TableColumn<Produit, String> barcodeColumn;
-    @FXML private TableColumn<Produit, String> typeColumn; // New column for type
-    
+    @FXML private TableColumn<Produit, String> typeColumn;
+
     @FXML private TextField nameField;
     @FXML private TextField priceField;
     @FXML private TextField stockField;
     @FXML private TextField barcodeField;
-    @FXML private ChoiceBox<String> typeChoiceBox; // ChoiceBox for type
+    @FXML private ChoiceBox<String> typeChoiceBox;
     @FXML private Label messageLabel;
 
     private ProduitDAO produitDAO;
@@ -37,6 +40,11 @@ public class ProductManagementController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        if (!SessionContext.isAdmin()) {
+            denyAccessAndClose();
+            return;
+        }
+
         produitDAO = new ProduitDAO();
         products = FXCollections.observableArrayList();
 
@@ -50,13 +58,12 @@ public class ProductManagementController implements Initializable {
         idColumn.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getId()).asObject());
         nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNom()));
         priceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getPrix()).asObject());
-        stockColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantite()).asObject()); // Changed to Double
+        stockColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantite()).asObject());
         barcodeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCodeBarres()));
-        typeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getType())); // New column
+        typeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getType()));
 
         productsTable.setItems(products);
 
-        // Add selection listener
         productsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 selectedProduct = newSelection;
@@ -67,7 +74,7 @@ public class ProductManagementController implements Initializable {
 
     private void setupTypeChoiceBox() {
         typeChoiceBox.setItems(FXCollections.observableArrayList("unit", "weight"));
-        typeChoiceBox.setValue("unit"); // Default value
+        typeChoiceBox.setValue("unit");
     }
 
     private void loadProducts() {
@@ -78,7 +85,7 @@ public class ProductManagementController implements Initializable {
     private void populateForm(Produit produit) {
         nameField.setText(produit.getNom());
         priceField.setText(String.valueOf(produit.getPrix()));
-        stockField.setText(String.valueOf(produit.getQuantite())); // Changed to double
+        stockField.setText(String.valueOf(produit.getQuantite()));
         barcodeField.setText(produit.getCodeBarres());
         typeChoiceBox.setValue(produit.getType());
     }
@@ -98,7 +105,7 @@ public class ProductManagementController implements Initializable {
             }
 
             double price = Double.parseDouble(priceText);
-            double stock = Double.parseDouble(stockText); // Changed to double
+            double stock = Double.parseDouble(stockText);
 
             if (price < 0 || stock < 0) {
                 showMessage("Le prix et le stock doivent être positifs.");
@@ -106,12 +113,10 @@ public class ProductManagementController implements Initializable {
             }
 
             if (selectedProduct == null) {
-                // Add new product
                 Produit newProduct = new Produit(name, price, stock, barcode, type);
                 produitDAO.addProduit(newProduct);
                 showMessage("Produit ajouté avec succès.");
             } else {
-                // Update existing product
                 selectedProduct.setNom(name);
                 selectedProduct.setPrix(price);
                 selectedProduct.setQuantite(stock);
@@ -164,10 +169,23 @@ public class ProductManagementController implements Initializable {
         priceField.clear();
         stockField.clear();
         barcodeField.clear();
-        typeChoiceBox.setValue("unit"); // Reset to default
+        typeChoiceBox.setValue("unit");
         selectedProduct = null;
         productsTable.getSelectionModel().clearSelection();
         clearMessage();
+    }
+
+    private void denyAccessAndClose() {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Accès refusé");
+            alert.setHeaderText("Accès administrateur requis");
+            alert.setContentText("Vous n'avez pas les droits pour accéder à cette fonctionnalité.");
+            alert.showAndWait();
+
+            Stage stage = (Stage) productsTable.getScene().getWindow();
+            stage.close();
+        });
     }
 
     private void showMessage(String message) {
@@ -178,5 +196,3 @@ public class ProductManagementController implements Initializable {
         messageLabel.setText("");
     }
 }
-
-

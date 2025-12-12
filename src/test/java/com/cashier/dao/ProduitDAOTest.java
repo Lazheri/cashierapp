@@ -14,8 +14,10 @@ public class ProduitDAOTest {
     private ProduitDAO produitDAO;
 
     @BeforeEach
-    public void setUp() {
-        // Create tables for testing
+    public void setUp() throws Exception {
+        System.setProperty("cashier.db.url", "jdbc:sqlite:target/test.db");
+        java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get("target/test.db"));
+
         Database.createTables();
         produitDAO = new ProduitDAO();
     }

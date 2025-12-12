@@ -1,11 +1,14 @@
 package com.cashier.controller;
 
+import com.cashier.SessionContext;
 import com.cashier.dao.ProduitDAO;
 import com.cashier.dao.VenteDAO;
 import com.cashier.dao.LigneVenteDAO;
 import com.cashier.model.Produit;
 import com.cashier.model.Vente;
 import com.cashier.model.LigneVente;
+import com.cashier.model.User;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -28,6 +31,11 @@ import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 
 public class MainController implements Initializable {
+
+    @FXML private Menu gestionMenu;
+    @FXML private MenuItem productManagementMenuItem;
+    @FXML private MenuItem salesHistoryMenuItem;
+    @FXML private Label cashierNameLabel;
 
     @FXML private TableView<Produit> productsTable;
     @FXML private TableColumn<Produit, Integer> productIdColumn;
@@ -67,13 +75,40 @@ public class MainController implements Initializable {
         loadProducts();
         clearMessage();
 
-        // Listener for product selection to adjust spinner step - REMOVED CATEGORY LOGIC
+        applySessionContext();
+
         productsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
-                // Always use 0.1 for step, assuming all products can be sold by weight or in fractional quantities
                 quantitySpinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 9999.0, 0.1, 0.1));
             }
         });
+    }
+
+    private void applySessionContext() {
+        if (!SessionContext.isLoggedIn()) {
+            Platform.runLater(this::navigateToLogin);
+            return;
+        }
+
+        User user = SessionContext.getCurrentUser();
+        if (user != null) {
+            cashierNameLabel.setText("Caissier: " + user.getUsername() + " (" + user.getRole() + ")");
+        }
+
+        if (!SessionContext.isAdmin()) {
+            if (gestionMenu != null) {
+                gestionMenu.setDisable(true);
+                gestionMenu.setVisible(false);
+            }
+            if (productManagementMenuItem != null) {
+                productManagementMenuItem.setDisable(true);
+                productManagementMenuItem.setVisible(false);
+            }
+            if (salesHistoryMenuItem != null) {
+                salesHistoryMenuItem.setDisable(true);
+                salesHistoryMenuItem.setVisible(false);
+            }
+        }
     }
 
     private void setupProductsTable() {
@@ -97,7 +132,6 @@ public class MainController implements Initializable {
 
         cartTable.setItems(cartItems);
 
-        // Make quantity column editable
         cartQuantityColumn.setCellFactory(TextFieldTableCell.forTableColumn(new StringConverter<Double>() {
             @Override
             public String toString(Double object) {
@@ -122,7 +156,7 @@ public class MainController implements Initializable {
             if (productInStock != null) {
                 if (newQuantity > productInStock.getQuantite()) {
                     showMessage("Quantité demandée supérieure au stock disponible pour " + item.getProductName() + ".");
-                    item.setQuantity(oldQuantity); // Revert to old quantity
+                    item.setQuantity(oldQuantity);
                     cartTable.refresh();
                 } else if (newQuantity <= 0) {
                     cartItems.remove(item);
@@ -137,7 +171,6 @@ public class MainController implements Initializable {
     }
 
     private void setupQuantitySpinner() {
-        // Default spinner setup, always use 0.1 for step
         quantitySpinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 9999.0, 0.1, 0.1));
         quantitySpinner.setEditable(true);
     }
@@ -162,7 +195,6 @@ public class MainController implements Initializable {
             return;
         }
 
-        // Check if product already in cart
         CartItem existingItem = null;
         for (CartItem item : cartItems) {
             if (item.getProductId() == selectedProduct.getId()) {
@@ -222,27 +254,30 @@ public class MainController implements Initializable {
             return;
         }
 
+        User currentUser = SessionContext.getCurrentUser();
+        if (currentUser == null) {
+            showMessage("Session expirée. Veuillez vous reconnecter.");
+            navigateToLogin();
+            return;
+        }
+
         try {
-            // Create sale
             double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
-            Vente vente = new Vente(LocalDateTime.now(), total);
+            Vente vente = new Vente(LocalDateTime.now(), total, currentUser.getId());
             double venteId = venteDAO.addVente(vente);
 
             if (venteId > 0) {
-                // Add sale lines and update product stock
                 for (CartItem item : cartItems) {
                     LigneVente ligneVente = new LigneVente((int) venteId, item.getProductId(), item.getQuantity(), item.getUnitPrice());
                     ligneVenteDAO.addLigneVente(ligneVente);
 
-                    // Update product stock
                     Produit produit = produitDAO.getProduitById(item.getProductId());
                     if (produit != null) {
-                        produit.setQuantite(produit.getQuantite() - item.getQuantity()); 
+                        produit.setQuantite(produit.getQuantite() - item.getQuantity());
                         produitDAO.updateProduit(produit);
                     }
                 }
 
-                // Show receipt
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ReceiptView.fxml"));
                 Parent root = loader.load();
                 ReceiptController receiptController = loader.getController();
@@ -256,7 +291,7 @@ public class MainController implements Initializable {
 
                 showMessage("Vente enregistrée avec succès! ID: " + (int) venteId);
                 clearCart();
-                loadProducts(); // Refresh product list after sale
+                loadProducts();
             } else {
                 showMessage("Erreur lors de l\"enregistrement de la vente.");
             }
@@ -273,6 +308,10 @@ public class MainController implements Initializable {
 
     @FXML
     private void showProductManagement() {
+        if (!ensureAdminAccess()) {
+            return;
+        }
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ProductManagement.fxml"));
             Parent root = loader.load();
@@ -281,8 +320,8 @@ public class MainController implements Initializable {
             stage.setTitle("Gestion des Produits");
             stage.setScene(new Scene(root, 800, 600));
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.showAndWait(); // Use showAndWait to refresh products when dialog closes
-            loadProducts(); // Refresh products after management
+            stage.showAndWait();
+            loadProducts();
         } catch (IOException e) {
             showMessage("Erreur lors de l\"ouverture de la gestion des produits: " + e.getMessage());
         }
@@ -290,6 +329,10 @@ public class MainController implements Initializable {
 
     @FXML
     private void showSalesHistory() {
+        if (!ensureAdminAccess()) {
+            return;
+        }
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SalesHistory.fxml"));
             Parent root = loader.load();
@@ -301,6 +344,41 @@ public class MainController implements Initializable {
             stage.show();
         } catch (IOException e) {
             showMessage("Erreur lors de l\"ouverture de l\"historique des ventes: " + e.getMessage());
+        }
+    }
+
+    private boolean ensureAdminAccess() {
+        if (SessionContext.isAdmin()) {
+            return true;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Accès refusé");
+        alert.setHeaderText("Accès administrateur requis");
+        alert.setContentText("Vous n'avez pas les droits pour accéder à cette fonctionnalité.");
+        alert.showAndWait();
+        return false;
+    }
+
+    @FXML
+    private void handleLogout() {
+        SessionContext.clear();
+        navigateToLogin();
+    }
+
+    private void navigateToLogin() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LoginView.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) payButton.getScene().getWindow();
+            Scene scene = new Scene(root, 450, 320);
+            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setResizable(false);
+            stage.centerOnScreen();
+        } catch (IOException e) {
+            showMessage("Erreur lors de la déconnexion: " + e.getMessage());
         }
     }
 
@@ -317,7 +395,6 @@ public class MainController implements Initializable {
         messageLabel.setText("");
     }
 
-    // Inner class for cart items
     public static class CartItem {
         private int productId;
         private String productName;
@@ -331,13 +408,28 @@ public class MainController implements Initializable {
             this.unitPrice = unitPrice;
         }
 
-        public int getProductId() { return productId; }
-        public String getProductName() { return productName; }
-        public double getQuantity() { return quantity; }
-        public void setQuantity(double quantity) { this.quantity = quantity; }
-        public double getUnitPrice() { return unitPrice; }
-        public double getTotal() { return quantity * unitPrice; }
+        public int getProductId() {
+            return productId;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+
+        public double getQuantity() {
+            return quantity;
+        }
+
+        public void setQuantity(double quantity) {
+            this.quantity = quantity;
+        }
+
+        public double getUnitPrice() {
+            return unitPrice;
+        }
+
+        public double getTotal() {
+            return quantity * unitPrice;
+        }
     }
 }
-
-
