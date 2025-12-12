@@ -74,6 +74,43 @@ public class Database {
                 }
             }
 
+            // Attempt to add payment-related columns to Ventes table
+            try {
+                stmt.execute("ALTER TABLE Ventes ADD COLUMN payment_method TEXT");
+                System.out.println("Column 'payment_method' added to Ventes table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
+            try {
+                stmt.execute("ALTER TABLE Ventes ADD COLUMN amount_paid REAL");
+                System.out.println("Column 'amount_paid' added to Ventes table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
+            try {
+                stmt.execute("ALTER TABLE Ventes ADD COLUMN change_due REAL");
+                System.out.println("Column 'change_due' added to Ventes table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
+            try {
+                stmt.execute("ALTER TABLE Ventes ADD COLUMN payment_reference TEXT");
+                System.out.println("Column 'payment_reference' added to Ventes table.");
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("duplicate column name")) {
+                    // Column already exists or other error
+                }
+            }
+
             System.out.println("Tables created or already exist.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());

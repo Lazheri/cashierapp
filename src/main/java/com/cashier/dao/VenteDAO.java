@@ -16,12 +16,16 @@ import java.util.List;
 public class VenteDAO {
 
     public double addVente(Vente vente) {
-        String sql = "INSERT INTO Ventes(date_vente, total) VALUES(?, ?)";
+        String sql = "INSERT INTO Ventes(date_vente, total, payment_method, amount_paid, change_due, payment_reference) VALUES(?, ?, ?, ?, ?, ?)";
         double venteId = -1;
         try (Connection conn = Database.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, vente.getDateVente().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             pstmt.setDouble(2, vente.getTotal());
+            pstmt.setString(3, vente.getPaymentMethod());
+            pstmt.setDouble(4, vente.getAmountPaid());
+            pstmt.setDouble(5, vente.getChangeDue());
+            pstmt.setString(6, vente.getPaymentReference());
             pstmt.executeUpdate();
 
             ResultSet rs = pstmt.getGeneratedKeys();
@@ -35,16 +39,25 @@ public class VenteDAO {
     }
 
     public List<Vente> getAllVentes() {
-        String sql = "SELECT id, date_vente, total FROM Ventes ORDER BY date_vente DESC";
+        String sql = "SELECT id, date_vente, total, payment_method, amount_paid, change_due, payment_reference FROM Ventes ORDER BY date_vente DESC";
         List<Vente> ventes = new ArrayList<>();
         try (Connection conn = Database.connect();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
+                String paymentMethod = rs.getString("payment_method");
+                double amountPaid = rs.getDouble("amount_paid");
+                double changeDue = rs.getDouble("change_due");
+                String paymentReference = rs.getString("payment_reference");
+                
                 Vente vente = new Vente(
                     rs.getInt("id"),
                     LocalDateTime.parse(rs.getString("date_vente"), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                    rs.getDouble("total")
+                    rs.getDouble("total"),
+                    paymentMethod,
+                    amountPaid,
+                    changeDue,
+                    paymentReference
                 );
                 ventes.add(vente);
             }

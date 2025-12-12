@@ -326,18 +326,41 @@ public class MainController implements Initializable {
         }
 
         try {
-            // Create sale
             double total = cartItems.stream().mapToDouble(CartItem::getTotal).sum();
-            Vente vente = new Vente(LocalDateTime.now(), total);
+            
+            FXMLLoader paymentLoader = new FXMLLoader(getClass().getResource("/fxml/PaymentDialog.fxml"));
+            Parent paymentRoot = paymentLoader.load();
+            PaymentDialogController paymentController = paymentLoader.getController();
+            paymentController.setTotal(total);
+
+            Stage paymentStage = new Stage();
+            paymentStage.setTitle("Paiement");
+            paymentStage.setScene(new Scene(paymentRoot));
+            paymentStage.initModality(Modality.APPLICATION_MODAL);
+            paymentStage.showAndWait();
+
+            com.cashier.model.PaymentResult paymentResult = paymentController.getResult();
+            
+            if (paymentResult == null || !paymentResult.isSuccess()) {
+                showMessage("Paiement annulé.");
+                return;
+            }
+
+            Vente vente = new Vente(
+                LocalDateTime.now(), 
+                total, 
+                paymentResult.getPaymentMethod(), 
+                paymentResult.getAmountPaid(), 
+                paymentResult.getChangeDue(), 
+                paymentResult.getPaymentReference()
+            );
             double venteId = venteDAO.addVente(vente);
 
             if (venteId > 0) {
-                // Add sale lines and update product stock
                 for (CartItem item : cartItems) {
                     LigneVente ligneVente = new LigneVente((int) venteId, item.getProductId(), item.getQuantity(), item.getUnitPrice());
                     ligneVenteDAO.addLigneVente(ligneVente);
 
-                    // Update product stock
                     Produit produit = produitDAO.getProduitById(item.getProductId());
                     if (produit != null) {
                         produit.setQuantite(produit.getQuantite() - item.getQuantity()); 
@@ -345,11 +368,10 @@ public class MainController implements Initializable {
                     }
                 }
 
-                // Show receipt
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ReceiptView.fxml"));
                 Parent root = loader.load();
                 ReceiptController receiptController = loader.getController();
-                receiptController.setReceiptDetails((int) venteId, vente.getDateVente(), cartItems, total);
+                receiptController.setReceiptDetails((int) venteId, vente, cartItems);
 
                 Stage receiptStage = new Stage();
                 receiptStage.setTitle("Reçu de Vente");
@@ -359,7 +381,7 @@ public class MainController implements Initializable {
 
                 showMessage("Vente enregistrée avec succès! ID: " + (int) venteId);
                 clearCart();
-                loadProducts(); // Refresh product list after sale
+                loadProducts();
             } else {
                 showMessage("Erreur lors de l\"enregistrement de la vente.");
             }
