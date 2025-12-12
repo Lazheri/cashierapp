@@ -6,36 +6,43 @@ import com.cashier.dao.LigneVenteDAO;
 import com.cashier.model.Produit;
 import com.cashier.model.Vente;
 import com.cashier.model.LigneVente;
+import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class MainController implements Initializable {
 
-    @FXML private TableView<Produit> productsTable;
-    @FXML private TableColumn<Produit, Integer> productIdColumn;
-    @FXML private TableColumn<Produit, String> productNameColumn;
-    @FXML private TableColumn<Produit, Double> productPriceColumn;
-    @FXML private TableColumn<Produit, Double> productStockColumn;
+    @FXML private TextField searchField;
+    @FXML private TextField barcodeField;
+    @FXML private ComboBox<String> categoryFilter;
+    @FXML private Label connectionStatusLabel;
 
-    @FXML private Spinner<Double> quantitySpinner;
+    @FXML private TilePane productGrid;
 
     @FXML private TableView<CartItem> cartTable;
     @FXML private TableColumn<CartItem, String> cartProductColumn;
@@ -46,12 +53,18 @@ public class MainController implements Initializable {
     @FXML private Label totalLabel;
     @FXML private Button payButton;
     @FXML private Label messageLabel;
+    
+    // Hidden spinner for logic consistency if needed, though we use direct add
+    @FXML private Spinner<Double> quantitySpinner;
 
     private ProduitDAO produitDAO;
     private VenteDAO venteDAO;
     private LigneVenteDAO ligneVenteDAO;
     private ObservableList<CartItem> cartItems;
-    private ObservableList<Produit> availableProducts;
+    private ObservableList<Produit> allProducts; // Cache of all products
+    
+    private PauseTransition searchDebounce;
+    private static final double LOW_STOCK_THRESHOLD = 5.0;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -59,34 +72,179 @@ public class MainController implements Initializable {
         venteDAO = new VenteDAO();
         ligneVenteDAO = new LigneVenteDAO();
         cartItems = FXCollections.observableArrayList();
-        availableProducts = FXCollections.observableArrayList();
+        allProducts = FXCollections.observableArrayList();
 
-        setupProductsTable();
         setupCartTable();
-        setupQuantitySpinner();
-        loadProducts();
-        clearMessage();
-
-        // Listener for product selection to adjust spinner step - REMOVED CATEGORY LOGIC
-        productsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                // Always use 0.1 for step, assuming all products can be sold by weight or in fractional quantities
-                quantitySpinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 9999.0, 0.1, 0.1));
-            }
+        loadProducts(); // Loads all products and populates grid
+        
+        // Search Debounce
+        searchDebounce = new PauseTransition(Duration.millis(300));
+        searchDebounce.setOnFinished(e -> renderProductGrid());
+        
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            searchDebounce.playFromStart();
         });
-    }
 
-    private void setupProductsTable() {
-        productIdColumn.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getId()).asObject());
-        productNameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNom()));
-        productPriceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getPrix()).asObject());
-        productStockColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantite()).asObject());
-        productsTable.setItems(availableProducts);
+        // Barcode Listener
+        barcodeField.setOnAction(e -> handleBarcodeEntry());
+        
+        // Category Filter Listener
+        categoryFilter.valueProperty().addListener((obs, oldVal, newVal) -> {
+            renderProductGrid();
+        });
+        
+        clearMessage();
     }
 
     private void loadProducts() {
-        availableProducts.clear();
-        availableProducts.addAll(produitDAO.getAllProduits());
+        allProducts.clear();
+        allProducts.addAll(produitDAO.getAllProduits());
+        
+        // Update Category Filter
+        Set<String> categories = allProducts.stream()
+            .map(Produit::getCategorie)
+            .filter(c -> c != null && !c.isEmpty())
+            .collect(Collectors.toSet());
+            
+        ObservableList<String> categoryList = FXCollections.observableArrayList("Toutes", "Stock Faible");
+        categoryList.addAll(categories.stream().sorted().collect(Collectors.toList()));
+        
+        // Preserve selection if possible
+        String currentSelection = categoryFilter.getValue();
+        categoryFilter.setItems(categoryList);
+        if (currentSelection != null && categoryList.contains(currentSelection)) {
+            categoryFilter.setValue(currentSelection);
+        } else {
+            categoryFilter.setValue("Toutes");
+        }
+        
+        renderProductGrid();
+    }
+
+    private void renderProductGrid() {
+        productGrid.getChildren().clear();
+        
+        String searchText = searchField.getText().toLowerCase().trim();
+        String selectedCategory = categoryFilter.getValue();
+        
+        List<Produit> filteredProducts = allProducts.stream()
+            .filter(p -> {
+                boolean matchesSearch = p.getNom().toLowerCase().contains(searchText) || 
+                                        (p.getCodeBarres() != null && p.getCodeBarres().contains(searchText));
+                
+                boolean matchesCategory = false;
+                if (selectedCategory == null || "Toutes".equals(selectedCategory)) {
+                    matchesCategory = true;
+                } else if ("Stock Faible".equals(selectedCategory)) {
+                     matchesCategory = p.getQuantite() < LOW_STOCK_THRESHOLD;
+                } else {
+                    matchesCategory = p.getCategorie() != null && p.getCategorie().equals(selectedCategory);
+                }
+                
+                return matchesSearch && matchesCategory;
+            })
+            .collect(Collectors.toList());
+            
+        for (Produit p : filteredProducts) {
+            productGrid.getChildren().add(createProductCard(p));
+        }
+    }
+
+    private VBox createProductCard(Produit p) {
+        VBox card = new VBox(5);
+        card.getStyleClass().add("product-card");
+        
+        if (p.getQuantite() < LOW_STOCK_THRESHOLD) {
+            card.getStyleClass().add("product-card-low-stock");
+        }
+
+        Label nameLabel = new Label(p.getNom());
+        nameLabel.getStyleClass().add("product-card-name");
+        nameLabel.setWrapText(true);
+        nameLabel.setMaxHeight(40);
+        nameLabel.setMinHeight(40);
+        nameLabel.setAlignment(Pos.TOP_LEFT);
+
+        Label priceLabel = new Label(String.format("%.3f TND", p.getPrix()));
+        priceLabel.getStyleClass().add("product-card-price");
+
+        Label stockLabel = new Label("Stock: " + p.getQuantite());
+        stockLabel.getStyleClass().add("product-card-stock");
+        if (p.getQuantite() < LOW_STOCK_THRESHOLD) {
+            stockLabel.getStyleClass().add("stock-pill-low");
+        }
+
+        card.getChildren().addAll(nameLabel, priceLabel, stockLabel);
+        
+        card.setOnMouseClicked(e -> addProductToCart(p));
+        
+        return card;
+    }
+    
+    private void handleBarcodeEntry() {
+        String barcode = barcodeField.getText().trim();
+        if (barcode.isEmpty()) return;
+        
+        Produit found = produitDAO.getProduitByCodeBarres(barcode);
+        if (found != null) {
+            addProductToCart(found);
+            barcodeField.clear();
+        } else {
+            showMessage("Produit non trouvé avec le code-barres: " + barcode);
+            // Optional: beep sound or visual cue
+        }
+    }
+
+    private void addProductToCart(Produit product) {
+        // Determine quantity step
+        double step = 1.0;
+        if ("weight".equalsIgnoreCase(product.getType())) {
+            step = 1.0; // Or 0.1 if preferred for weight items, but 1.0 is safer default
+        }
+        
+        // Check stock
+        if (product.getQuantite() <= 0) {
+            showMessage("Produit en rupture de stock: " + product.getNom());
+            return;
+        }
+
+        // Check if product already in cart
+        CartItem existingItem = null;
+        for (CartItem item : cartItems) {
+            if (item.getProductId() == product.getId()) {
+                existingItem = item;
+                break;
+            }
+        }
+
+        double requestedQuantity = step;
+        
+        if (existingItem != null) {
+            double newQuantity = existingItem.getQuantity() + requestedQuantity;
+            if (newQuantity > product.getQuantite()) {
+                showMessage("Stock insuffisant pour " + product.getNom() + " (Max: " + product.getQuantite() + ")");
+                return;
+            }
+            existingItem.setQuantity(newQuantity);
+            cartTable.refresh();
+        } else {
+            CartItem newItem = new CartItem(
+                product.getId(),
+                product.getNom(),
+                requestedQuantity,
+                product.getPrix()
+            );
+            cartItems.add(newItem);
+            
+            // Low stock warning when adding to cart
+            if (product.getQuantite() < LOW_STOCK_THRESHOLD) {
+                 showMessage("Attention: Stock faible pour " + product.getNom());
+            } else {
+                clearMessage();
+            }
+        }
+
+        updateTotals();
     }
 
     private void setupCartTable() {
@@ -113,6 +271,7 @@ public class MainController implements Initializable {
                 }
             }
         }));
+        
         cartQuantityColumn.setOnEditCommit(event -> {
             CartItem item = event.getRowValue();
             double oldQuantity = item.getQuantity();
@@ -122,7 +281,7 @@ public class MainController implements Initializable {
             if (productInStock != null) {
                 if (newQuantity > productInStock.getQuantite()) {
                     showMessage("Quantité demandée supérieure au stock disponible pour " + item.getProductName() + ".");
-                    item.setQuantity(oldQuantity); // Revert to old quantity
+                    item.setQuantity(oldQuantity);
                     cartTable.refresh();
                 } else if (newQuantity <= 0) {
                     cartItems.remove(item);
@@ -134,62 +293,6 @@ public class MainController implements Initializable {
         });
 
         cartTable.setEditable(true);
-    }
-
-    private void setupQuantitySpinner() {
-        // Default spinner setup, always use 0.1 for step
-        quantitySpinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 9999.0, 0.1, 0.1));
-        quantitySpinner.setEditable(true);
-    }
-
-    @FXML
-    private void addProductToCartFromTable() {
-        Produit selectedProduct = productsTable.getSelectionModel().getSelectedItem();
-        if (selectedProduct == null) {
-            showMessage("Veuillez sélectionner un produit dans la liste.");
-            return;
-        }
-
-        double requestedQuantity = quantitySpinner.getValue();
-
-        if (requestedQuantity <= 0) {
-            showMessage("Veuillez entrer une quantité valide.");
-            return;
-        }
-
-        if (requestedQuantity > selectedProduct.getQuantite()) {
-            showMessage("Quantité demandée supérieure au stock disponible.");
-            return;
-        }
-
-        // Check if product already in cart
-        CartItem existingItem = null;
-        for (CartItem item : cartItems) {
-            if (item.getProductId() == selectedProduct.getId()) {
-                existingItem = item;
-                break;
-            }
-        }
-
-        if (existingItem != null) {
-            double newQuantity = existingItem.getQuantity() + requestedQuantity;
-            if (newQuantity > selectedProduct.getQuantite()) {
-                showMessage("Quantité totale demandée supérieure au stock disponible.");
-                return;
-            }
-            existingItem.setQuantity(newQuantity);
-        } else {
-            CartItem newItem = new CartItem(
-                selectedProduct.getId(),
-                selectedProduct.getNom(),
-                requestedQuantity,
-                selectedProduct.getPrix()
-            );
-            cartItems.add(newItem);
-        }
-
-        updateTotals();
-        clearMessage();
     }
 
     @FXML
@@ -281,7 +384,7 @@ public class MainController implements Initializable {
             stage.setTitle("Gestion des Produits");
             stage.setScene(new Scene(root, 800, 600));
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.showAndWait(); // Use showAndWait to refresh products when dialog closes
+            stage.showAndWait(); 
             loadProducts(); // Refresh products after management
         } catch (IOException e) {
             showMessage("Erreur lors de l\"ouverture de la gestion des produits: " + e.getMessage());
@@ -311,6 +414,10 @@ public class MainController implements Initializable {
 
     private void showMessage(String message) {
         messageLabel.setText(message);
+        // Fade out message after 3 seconds
+        PauseTransition delay = new PauseTransition(Duration.seconds(3));
+        delay.setOnFinished(e -> messageLabel.setText(""));
+        delay.play();
     }
 
     private void clearMessage() {
@@ -339,5 +446,3 @@ public class MainController implements Initializable {
         public double getTotal() { return quantity * unitPrice; }
     }
 }
-
-

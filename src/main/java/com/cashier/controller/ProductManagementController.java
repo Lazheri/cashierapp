@@ -20,15 +20,17 @@ public class ProductManagementController implements Initializable {
     @FXML private TableColumn<Produit, Integer> idColumn;
     @FXML private TableColumn<Produit, String> nameColumn;
     @FXML private TableColumn<Produit, Double> priceColumn;
-    @FXML private TableColumn<Produit, Double> stockColumn; // Changed to Double
+    @FXML private TableColumn<Produit, Double> stockColumn;
     @FXML private TableColumn<Produit, String> barcodeColumn;
-    @FXML private TableColumn<Produit, String> typeColumn; // New column for type
+    @FXML private TableColumn<Produit, String> typeColumn;
+    @FXML private TableColumn<Produit, String> categoryColumn; // New column
     
     @FXML private TextField nameField;
     @FXML private TextField priceField;
     @FXML private TextField stockField;
     @FXML private TextField barcodeField;
-    @FXML private ChoiceBox<String> typeChoiceBox; // ChoiceBox for type
+    @FXML private ChoiceBox<String> typeChoiceBox;
+    @FXML private TextField categoryField; // New field
     @FXML private Label messageLabel;
 
     private ProduitDAO produitDAO;
@@ -50,9 +52,10 @@ public class ProductManagementController implements Initializable {
         idColumn.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getId()).asObject());
         nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNom()));
         priceColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getPrix()).asObject());
-        stockColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantite()).asObject()); // Changed to Double
+        stockColumn.setCellValueFactory(cellData -> new SimpleDoubleProperty(cellData.getValue().getQuantite()).asObject());
         barcodeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCodeBarres()));
-        typeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getType())); // New column
+        typeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getType()));
+        categoryColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getCategorie())); // New column factory
 
         productsTable.setItems(products);
 
@@ -78,9 +81,10 @@ public class ProductManagementController implements Initializable {
     private void populateForm(Produit produit) {
         nameField.setText(produit.getNom());
         priceField.setText(String.valueOf(produit.getPrix()));
-        stockField.setText(String.valueOf(produit.getQuantite())); // Changed to double
+        stockField.setText(String.valueOf(produit.getQuantite()));
         barcodeField.setText(produit.getCodeBarres());
         typeChoiceBox.setValue(produit.getType());
+        categoryField.setText(produit.getCategorie()); // Set category
     }
 
     @FXML
@@ -91,6 +95,7 @@ public class ProductManagementController implements Initializable {
             String stockText = stockField.getText().trim();
             String barcode = barcodeField.getText().trim();
             String type = typeChoiceBox.getValue();
+            String category = categoryField.getText().trim(); // Get category
 
             if (name.isEmpty() || priceText.isEmpty() || stockText.isEmpty() || type == null) {
                 showMessage("Veuillez remplir tous les champs obligatoires.");
@@ -98,7 +103,7 @@ public class ProductManagementController implements Initializable {
             }
 
             double price = Double.parseDouble(priceText);
-            double stock = Double.parseDouble(stockText); // Changed to double
+            double stock = Double.parseDouble(stockText);
 
             if (price < 0 || stock < 0) {
                 showMessage("Le prix et le stock doivent être positifs.");
@@ -107,7 +112,7 @@ public class ProductManagementController implements Initializable {
 
             if (selectedProduct == null) {
                 // Add new product
-                Produit newProduct = new Produit(name, price, stock, barcode, type);
+                Produit newProduct = new Produit(name, price, stock, barcode, type, category);
                 produitDAO.addProduit(newProduct);
                 showMessage("Produit ajouté avec succès.");
             } else {
@@ -117,6 +122,7 @@ public class ProductManagementController implements Initializable {
                 selectedProduct.setQuantite(stock);
                 selectedProduct.setCodeBarres(barcode);
                 selectedProduct.setType(type);
+                selectedProduct.setCategorie(category);
                 produitDAO.updateProduit(selectedProduct);
                 showMessage("Produit mis à jour avec succès.");
             }
@@ -164,7 +170,8 @@ public class ProductManagementController implements Initializable {
         priceField.clear();
         stockField.clear();
         barcodeField.clear();
-        typeChoiceBox.setValue("unit"); // Reset to default
+        typeChoiceBox.setValue("unit");
+        categoryField.clear(); // Clear category
         selectedProduct = null;
         productsTable.getSelectionModel().clearSelection();
         clearMessage();
@@ -178,5 +185,3 @@ public class ProductManagementController implements Initializable {
         messageLabel.setText("");
     }
 }
-
-

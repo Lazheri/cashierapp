@@ -33,6 +33,7 @@
                         <TableColumn fx:id="stockColumn" prefWidth="80.0" text="Stock" />
                         <TableColumn fx:id="barcodeColumn" prefWidth="120.0" text="Code-barres" />
                         <TableColumn fx:id="typeColumn" prefWidth="80.0" text="Type" />
+                        <TableColumn fx:id="categoryColumn" prefWidth="100.0" text="Catégorie" />
                      </columns>
                   </TableView>
                </children>
@@ -66,6 +67,9 @@
 
                         <Label text="Type:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
                         <ChoiceBox fx:id="typeChoiceBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                        <Label text="Catégorie:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                        <TextField fx:id="categoryField" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                      </children>
                   </GridPane>
                   

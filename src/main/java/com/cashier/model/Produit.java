@@ -7,22 +7,33 @@ public class Produit {
     private double quantite;
     private String codeBarres;
     private String type; // 'unit' or 'weight'
+    private String categorie;
 
-    public Produit(int id, String nom, double prix, double quantite, String codeBarres, String type) {
+    public Produit(int id, String nom, double prix, double quantite, String codeBarres, String type, String categorie) {
         this.id = id;
         this.nom = nom;
         this.prix = prix;
         this.quantite = quantite;
         this.codeBarres = codeBarres;
         this.type = type;
+        this.categorie = categorie;
     }
 
-    public Produit(String nom, double prix, double quantite, String codeBarres, String type) {
+    public Produit(int id, String nom, double prix, double quantite, String codeBarres, String type) {
+        this(id, nom, prix, quantite, codeBarres, type, null);
+    }
+
+    public Produit(String nom, double prix, double quantite, String codeBarres, String type, String categorie) {
         this.nom = nom;
         this.prix = prix;
         this.quantite = quantite;
         this.codeBarres = codeBarres;
         this.type = type;
+        this.categorie = categorie;
+    }
+
+    public Produit(String nom, double prix, double quantite, String codeBarres, String type) {
+        this(nom, prix, quantite, codeBarres, type, null);
     }
 
     // Getters and Setters
@@ -74,17 +85,24 @@ public class Produit {
         this.type = type;
     }
 
+    public String getCategorie() {
+        return categorie;
+    }
+
+    public void setCategorie(String categorie) {
+        this.categorie = categorie;
+    }
+
     @Override
     public String toString() {
         return "Produit{" +
                "id=" + id +
-               ", nom=\'" + nom + '\'' +
+               ", nom='" + nom + '\'' +
                ", prix=" + prix +
                ", quantite=" + quantite +
-               ", codeBarres=\'" + codeBarres + '\'' +
-               ", type=\'" + type + '\'' +
+               ", codeBarres='" + codeBarres + '\'' +
+               ", type='" + type + '\'' +
+               ", categorie='" + categorie + '\'' +
                '}' + "\n";
     }
 }
-
-
